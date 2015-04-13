@@ -1,0 +1,89 @@
+---
+title: "Data Analayis for Titanic Data"
+output: html_document
+---
+
+```{r}
+#Read the train data.
+trn <- read.csv("ttn_train.csv",header=TRUE)
+#Check how many rows and columns in the data
+dim(trn)
+# Check the data types and what sort of values are there in the data set
+str(trn)
+
+#Convert the columns such as Pclass,Sex,Sibsp etc to Factor columns as these have very few unique values.
+
+trn$Sex <- as.factor(as.character(trn$Sex))
+trn$Survived <- as.factor(as.character(trn$Survived))
+trn$Pclass <- as.factor(as.character(trn$Pclass))
+trn$SibSp <- as.factor(as.character(trn$SibSp))
+trn$Parch <- as.factor(as.character(trn$Parch))
+trn$Embarked <- as.factor(as.character(trn$Embarked))
+
+# Check the data types and what sort of values are there in the data set again to see that needed colums are now converted to factor columns.
+str(trn)
+
+#Now chck whether we have any misisng data
+dim(trn)[1]
+#comple cases will give the data where all columns are not NA if any of the column is NA that record wont be a comple case and thus it is a way to find out any na in whole record.
+sum(complete.cases(trn))
+
+#Now find the columns which has the missing data.
+
+sapply(lapply(trn,function(x) is.na(x)),sum)
+
+#Only Age has 177 misisng records. I will impute these with median values of age. There are other ways to do as well but I will keep it simple and use median age
+
+med_age <-  median(trn$Age,na.rm=TRUE)
+#impute the data
+trn$Age <- ifelse(is.na(trn$Age),med_age,trn$Age)
+
+#run below again and make sure that it is same as dim(trn)
+sum(complete.cases(trn))
+
+#Now we have the data Let us look at how the data looks like. I will use summary command to see the data for all the columns
+
+summary(trn)
+#It provides meadin,mean and other summary stats. I could see that 687 values for cabin are blank andfor Embarked there are 2 such values.
+# I will remove cabin column as well as Ticket columns form the data set
+
+trn$Cabin <- NULL
+trn$Ticket <- NULL
+
+#Survived is out columns which defines whether a person was survived or died. 1 means survived and 0 means not.
+
+#Let us use table command and see how will it look against other columns.
+table(trn$Survived)
+# There were 549 survived and 342 did not survive.
+
+# age is continous column i will divide it by 10 and use floor values
+table(floor(trn$Age/10),trn$Survived)
+#Survival ratio is good for people less than 10 years old and worst is for people between 20 and 30.
+# Note that the meadin age was 28 and thus we have lots of imputed data and if actual ages were known this woyld have been a bit differnt but overall picture should have been more or less similar.
+
+#Now check the class
+
+table(trn$Pclass,trn$Survived)
+
+#Survival ratio is quite good in 1st Class which is expectedit is quite good in second class as welland in the 3rd class only 25% people survived. Thus, this looks one of possible candidate which could be used in model to check whether a person will survive or die.
+
+#now chekc based on Sex
+table(trn$Sex,trn$Survived)
+
+# Female survival ratio is quite high and mails is just 20 %.Thus, this seems to be a great feature as well.
+
+
+table(trn$Embarked,trn$Survived)
+#Port of emabrkment seems to be a nice columns as well. I will explain later why this might not be useful for final model.
+
+table(trn$SibSp,trn$Survived)
+
+#if there were just 1 or sibling aboard chancec of survival looks better. Thu it could be useful.
+
+table(trn$Parch,trn$Survived)
+
+#if there were just 1 or more parent aboard chances of survival looks better. Thu it could be useful.
+
+```
+
+

@@ -1,0 +1,108 @@
+---
+title: "Data Analayis for Titanic Data"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+#Read the train data.
+trn <- read.csv("ttn_train.csv",header=TRUE)
+#Check how many rows and columns in the data
+dim(trn)
+# Check the data types and what sort of values are there in the data set
+str(trn)
+
+#Convert the columns such as Pclass,Sex,Sibsp etc to Factor columns as these have very few unique values.
+
+trn$Sex <- as.factor(as.character(trn$Sex))
+trn$Survived <- as.factor(as.character(trn$Survived))
+trn$Pclass <- as.factor(as.character(trn$Pclass))
+trn$SibSp <- as.factor(as.character(trn$SibSp))
+trn$Parch <- as.factor(as.character(trn$Parch))
+trn$Embarked <- as.factor(as.character(trn$Embarked))
+
+
+#Only Age has 177 misisng records. I will impute these with median values of age. There are other ways to do as well but I will keep it simple and use median age
+
+med_age <-  median(trn$Age,na.rm=TRUE)
+#impute the data
+trn$Age <- ifelse(is.na(trn$Age),med_age,trn$Age)
+
+
+summary(trn)
+#It provides meadin,mean and other summary stats. I could see that 687 values for cabin are blank andfor Embarked there are 2 such values.
+# I will remove cabin column as well as Ticket columns form the data set
+
+trn$Cabin <- NULL
+trn$Ticket <- NULL
+
+# Now let us look at some of the graphs. In Data analysis we found that age Pclass and sex were quite good columns for model and let us visually see them.
+
+#set the colors for graphs
+colset <- c("#0072B2", "#D55E00" ,"#CC79A7")
+#boxplot
+plot(trn$Age~trn$Survived,col=colset,xlab='Survived',ylab='Age')
+# survived has 25th percentile on lower side as compared to not survived.
+#mosaic plot
+plot(trn$Survived~trn$Age,col=colset,xlab='Age',ylab='Survived')
+# Here age was divided into intervals of 10's and the breadth of interval corresponds to the number of people.
+
+#As you could see that more people survived in 0-10 an d11-20 as compared to 20-30 and for 30-40 more people survived.
+
+#Now let us have a look at sex columns
+plot(trn$Survived~trn$Sex,col=colset,xlab='Sex',ylab='Survived')
+
+# This clearly shows the distinction and as you could see that the survival for females are much higher than males.
+
+#Now let us have a look at Pclass columns
+plot(trn$Survived~trn$Pclass,col=colset,xlab='Travel Class',ylab='Survived')
+
+# It clearly shows that people in 3rd class had very less chance of survival as compared to 2nd and 1st class. In fact chances of survival in First class are highest.
+
+#try sibsp columns
+plot(trn$Survived~trn$SibSp,col=colset,xlab='Siblings & Sposues',ylab='Survived')
+
+# here you could see that the chances of survival when you have 1 or 2 siblings and spuses were high. The breadth of these graphs corresponds to the count and thus you could see that most of the people were without sibling and spouses on aboard.
+
+#try Parch columns
+plot(trn$Survived~trn$Parch,col=colset,xlab='Parch',ylab='Survived')
+
+# here you could see that the chances of survival when you have 1 or 2 Parch and spuses were high. The breadth of these graphs corresponds to the count and thus you could see that most of the people were without sibling and spouses on aboard.
+
+#Now let us see for portof embarkment
+
+#try Parch columns
+plot(trn$Survived~trn$Embarked,col=colset,xlab='Port of Embarkment',ylab='Survived')
+
+# Here it looks like that the chances of survival are higher if you boarded from C and very less chances when you boarded from Southampton.
+
+# Now let us take an example where it is possible that there were more females say in Pclass 1 and that is why the success rate is high or vice versa and this is the same case for any combination of the columns. Now  we will look at these interactions as well.
+
+mosaicplot(~ Sex + Pclass + Survived, data = trn, color = colset)
+
+
+# This is an intersting graph. Although it shows that in each class there were more number of males and thus. These 2 columns seems to explain the data properly.
+
+# Females in 1st class had very high rate of survivall and in 3rd class this rate is around 50%.
+
+#Males in 1st class has very high rate but it is not better than the female in 3rd class and thus it looks like that sex was more dominant feature here.
+
+# Now let us look at fare. It looks like that Pclass column is derived from it.
+
+mosaicplot(~  Pclass + as.factor(floor(trn$Fare/100)) + Survived, data = trn, color = colset)
+
+
+#sex embarked
+mosaicplot(~ Sex + Embarked + Survived , data = trn, color = colset)
+
+#Here you could see that if you were female from the Q then survival chances were quite less.
+
+mosaicplot(~ Sex + floor(Age/10) + Survived , data = trn, color = colset, main = 'Sex Vs Age for Survived')
+
+# Thus I will use following 5 columsn for model building
+
+#Sex,Age,PClass,Parch and Sibsp
+
+```
+
+

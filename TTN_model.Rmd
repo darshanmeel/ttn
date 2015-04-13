@@ -1,0 +1,112 @@
+---
+title: "Data Analayis for Titanic Data"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+#Read the train data.
+trn <- read.csv("ttn_train.csv",header=TRUE)
+#Check how many rows and columns in the data
+dim(trn)
+# Check the data types and what sort of values are there in the data set
+str(trn)
+
+#Convert the columns such as Pclass,Sex,Sibsp etc to Factor columns as these have very few unique values.
+
+trn$Sex <- as.factor(as.character(trn$Sex))
+trn$Survived <- as.factor(as.character(trn$Survived))
+trn$Pclass <- as.factor(as.character(trn$Pclass))
+trn$SibSp <- as.factor(as.character(trn$SibSp))
+trn$Parch <- as.factor(as.character(trn$Parch))
+trn$Embarked <- as.factor(as.character(trn$Embarked))
+
+
+#Only Age has 177 misisng records. I will impute these with median values of age. There are other ways to do as well but I will keep it simple and use median age
+
+med_age <-  median(trn$Age,na.rm=TRUE)
+#impute the data
+trn$Age <- ifelse(is.na(trn$Age),med_age,trn$Age)
+
+
+summary(trn)
+#It provides meadin,mean and other summary stats. I could see that 687 values for cabin are blank andfor Embarked there are 2 such values.
+# I will remove cabin column as well as Ticket columns form the data set
+
+trn$Cabin <- NULL
+trn$Ticket <- NULL
+trn$PassengerId <- NULL
+trn$Fare <- NULL
+trn$Name <- NULL
+
+
+# Now let us look at some of the graphs. In Data analysis we found that age Pclass and sex were quite good columns for model and let us visually see them.
+
+require(randomForest)
+require(caret)
+
+
+trn_idx<- createDataPartition(trn$Survived, times=1,p=0.8,list=FALSE)
+
+trn_data <- trn[trn_idx,]
+tst_data <- trn[-trn_idx,]
+
+frml <- as.formula('Survived ~ .')
+rf <- randomForest(frml,data =trn_data,importance=TRUE,ntree=1000,mtry=4,nodesize=5)
+rf
+importance(rf)
+
+pred <- predict(rf,tst_data)
+tb <- table(pred,tst_data$Survived)
+#check the results
+
+confusionMatrix(tb,positive='1')
+
+# Now let us try on actual test data
+
+tst_dt <- read.csv("ttn_test.csv",header=TRUE)
+tst_dt$Sex <- as.factor(as.character(tst_dt$Sex))
+tst_dt$Survived <- as.factor(as.character(tst_dt$Survived))
+tst_dt$Pclass <- as.factor(as.character(tst_dt$Pclass))
+tst_dt$SibSp <- as.factor(as.character(tst_dt$SibSp))
+tst_dt$Parch <- as.factor(as.character(tst_dt$Parch))
+tst_dt$Embarked <- as.factor(as.character(tst_dt$Embarked))
+
+#parch has extra level so fix that
+
+tst_dt$Parch <- ifelse(tst_dt$Parch==9,6,tst_dt$Parch)
+tst_dt$Parch <- ifelse(tst_dt$Parch==7,6,tst_dt$Parch)
+tst_dt$Parch <- as.factor(as.character(tst_dt$Parch))
+
+#replcae the missing age values with med_age
+
+tst_dt$Age <- ifelse(is.na(tst_dt$Age),med_age,tst_dt$Age)
+
+#remove unwanted columns
+
+tst_dt$Cabin <- NULL
+tst_dt$Ticket <- NULL
+
+tst_dt$Fare <- NULL
+tst_dt$Name <- NULL
+
+levels(tst_dt$Parch) <- levels(trn$Parch)
+levels(tst_dt$Embarked) <- levels(trn$Embarked)
+
+frml <- as.formula('Survived ~ .')
+#use full training data now for final training
+rf <- randomForest(frml,data =trn,importance=TRUE,ntree=1000,mtry=4,nodesize=5)
+rf
+importance(rf)
+
+pred <- predict(rf,tst_dt)
+tst_dt$Survived <- pred
+td <- tst_dt[,c('PassengerId','Survived')]
+
+head(td)
+
+write.csv(td,file='td.csv',row.names=FALSE)
+
+```
+
+
