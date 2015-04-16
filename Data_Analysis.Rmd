@@ -4,6 +4,7 @@ output: html_document
 ---
 
 ```{r}
+
 #Read the train data.
 trn <- read.csv("ttn_train.csv",header=TRUE)
 #Check how many rows and columns in the data
@@ -83,6 +84,12 @@ table(trn$SibSp,trn$Survived)
 table(trn$Parch,trn$Survived)
 
 #if there were just 1 or more parent aboard chances of survival looks better. Thu it could be useful.
+
+
+
+table(trn$Fare,trn$Survived)
+
+# There is no obvious trend here but looks like more the fare chances are better.
 
 ```
 

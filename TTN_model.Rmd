@@ -4,9 +4,26 @@ output: html_document
 ---
 
 ```{r}
+install.packages('rattle')
+install.packages('rpart.plot')
+install.packages('RColorBrewer')
+install.packages('ggplot2')
+install.packages('rpart')
+install.packages('randomForest')
+install.packages('caret')
+install.packages('e1071')
+
 library(ggplot2)
+library(randomForest)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+library(caret)
+library(e1071)
+
 #Read the train data.
-trn <- read.csv("ttn_train.csv",header=TRUE)
+trn <- read.csv("ttn_train.csv",header=TRUE,stringsAsFactors=FALSE)
 #Check how many rows and columns in the data
 dim(trn)
 # Check the data types and what sort of values are there in the data set
@@ -19,7 +36,9 @@ trn$Survived <- as.factor(as.character(trn$Survived))
 trn$Pclass <- as.factor(as.character(trn$Pclass))
 trn$SibSp <- as.factor(as.character(trn$SibSp))
 trn$Parch <- as.factor(as.character(trn$Parch))
+trn$Embarked <- ifelse(trn$Embarked =="","S",trn$Embarked)
 trn$Embarked <- as.factor(as.character(trn$Embarked))
+summary(trn$Embarked)
 
 
 #Only Age has 177 misisng records. I will impute these with median values of age. There are other ways to do as well but I will keep it simple and use median age
@@ -30,32 +49,57 @@ trn$Age <- ifelse(is.na(trn$Age),med_age,trn$Age)
 
 
 summary(trn)
+
+#make 10 buckets of the age.
+trn$Age <- as.factor(as.character(floor(trn$Age/10)))
+
+#make  buckets of the fare of size 50.
+trn$Fare <- as.factor(as.character(floor(trn$Fare/50)))
+
 #It provides meadin,mean and other summary stats. I could see that 687 values for cabin are blank andfor Embarked there are 2 such values.
 # I will remove cabin column as well as Ticket columns form the data set
 
 trn$Cabin <- NULL
 trn$Ticket <- NULL
 trn$PassengerId <- NULL
-trn$Fare <- NULL
 trn$Name <- NULL
 
+summary(trn)
 
 # Now let us look at some of the graphs. In Data analysis we found that age Pclass and sex were quite good columns for model and let us visually see them.
 
-require(randomForest)
-require(caret)
-
-
-trn_idx<- createDataPartition(trn$Survived, times=1,p=0.8,list=FALSE)
+trn_idx<- createDataPartition(trn$Survived, times=1,p=0.7,list=FALSE)
 
 trn_data <- trn[trn_idx,]
 tst_data <- trn[-trn_idx,]
 
 frml <- as.formula('Survived ~ .')
-rf <- randomForest(frml,data =trn_data,importance=TRUE,ntree=1000,mtry=4,nodesize=5)
+
+#create a decision tree and then plot it and see how it looks like
+rt <- rpart(frml, trn_data,  control = rpart.control(cp = 0.005))
+plot(rt)
+text(rt, use.n = TRUE)
+
+
+
+#We can see the tree and it is as what we expected sex being most important then p class and age etc. But tree doesnt look good.
+#let us use other methods to show the trees.
+
+fancyRpartPlot(rt,sub="Decision Tree for Titanic Data")
+
+#Now this decision tree looks really nice.
+
+#Now let us use random forest
+
+rf <- randomForest(frml,data =trn_data,importance=TRUE,ntree=1000,mtry=4,nodesize=10)
 rf
 importance(rf)
+#The Sex is most important followed by Paclass and Age and Embarked.Now let us plot these.
 
+colset <- c("#0072B2", "#D55E00" ,"#CC79A7","#DD79A7","#1179A7","#2279A7","#3379A7","#4479A7","#5579A7")
+varImpPlot(rf,color=colset,gcolor=colset,pch=16,main="Varibale Importance for Model RF")
+
+#Now let us predict and see hows it doing
 pred <- predict(rf,tst_data)
 tb <- table(pred,tst_data$Survived)
 #check the results
@@ -64,13 +108,15 @@ confusionMatrix(tb,positive='1')
 
 # Now let us try on actual test data
 
-tst_dt <- read.csv("ttn_test.csv",header=TRUE)
+tst_dt <- read.csv("ttn_test.csv",header=TRUE,stringsAsFactors=FALSE)
 tst_dt$Sex <- as.factor(as.character(tst_dt$Sex))
 tst_dt$Survived <- as.factor(as.character(tst_dt$Survived))
 tst_dt$Pclass <- as.factor(as.character(tst_dt$Pclass))
 tst_dt$SibSp <- as.factor(as.character(tst_dt$SibSp))
 tst_dt$Parch <- as.factor(as.character(tst_dt$Parch))
+tst_dt$Embarked <- ifelse(tst_dt$Embarked =="","S",tst_dt$Embarked)
 tst_dt$Embarked <- as.factor(as.character(tst_dt$Embarked))
+tst_dt$Fare <- ifelse(is.na(tst_dt$Fare),0,tst_dt$Fare)
 
 #parch has extra level so fix that
 
@@ -82,15 +128,21 @@ tst_dt$Parch <- as.factor(as.character(tst_dt$Parch))
 
 tst_dt$Age <- ifelse(is.na(tst_dt$Age),med_age,tst_dt$Age)
 
+#make 10 buckets of the age.
+tst_dt$Age <- as.factor(as.character(floor(tst_dt$Age/10)))
+
+#make  buckets of the fare of size 50.
+tst_dt$Fare <- as.factor(as.character(floor(tst_dt$Fare/50)))
+
 #remove unwanted columns
 
 tst_dt$Cabin <- NULL
 tst_dt$Ticket <- NULL
-
-tst_dt$Fare <- NULL
 tst_dt$Name <- NULL
 
 levels(tst_dt$Parch) <- levels(trn$Parch)
+levels(tst_dt$Age) <- levels(trn$Age)
+levels(tst_dt$Fare) <- levels(trn$Fare)
 levels(tst_dt$Embarked) <- levels(trn$Embarked)
 
 frml <- as.formula('Survived ~ .')
@@ -98,7 +150,7 @@ frml <- as.formula('Survived ~ .')
 rf <- randomForest(frml,data =trn,importance=TRUE,ntree=1000,mtry=4,nodesize=5)
 rf
 importance(rf)
-
+varImpPlot(rf,color=colset,gcolor=colset,pch=16,main="Varibale Importance for Model RF")
 pred <- predict(rf,tst_dt)
 tst_dt$Survived <- pred
 td <- tst_dt[,c('PassengerId','Survived')]
