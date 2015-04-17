@@ -1,6 +1,6 @@
 ---
-title: "Data Analayis for Titanic Data"
-output: html_document
+title: "Data Vizualization for Titanic Data"
+output: word_document
 ---
 
 ```{r}

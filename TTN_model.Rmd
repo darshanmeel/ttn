@@ -1,9 +1,8 @@
 ---
-title: "Data Analayis for Titanic Data"
-output: html_document
+title: "Model for Titanic Data"
+output: word_document
 ---
 
-```{r}
 install.packages('rattle')
 install.packages('rpart.plot')
 install.packages('RColorBrewer')
@@ -12,6 +11,9 @@ install.packages('rpart')
 install.packages('randomForest')
 install.packages('caret')
 install.packages('e1071')
+
+```{r}
+
 
 library(ggplot2)
 library(randomForest)
@@ -106,6 +108,7 @@ tb <- table(pred,tst_data$Survived)
 
 confusionMatrix(tb,positive='1')
 
+```
 # Now let us try on actual test data
 
 tst_dt <- read.csv("ttn_test.csv",header=TRUE,stringsAsFactors=FALSE)
@@ -159,6 +162,6 @@ head(td)
 
 write.csv(td,file='td.csv',row.names=FALSE)
 
-```
+
 
 
