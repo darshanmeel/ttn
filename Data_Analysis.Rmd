@@ -45,7 +45,12 @@ sum(complete.cases(trn))
 #Now we have the data Let us look at how the data looks like. I will use summary command to see the data for all the columns
 
 summary(trn)
-#It provides meadin,mean and other summary stats. I could see that 687 values for cabin are blank andfor Embarked there are 2 such values.
+#It provides meadin,mean and other summary stats. I could see that 687 values for cabin are blank andfor Embarked there are 2 such values. 
+# There are 549 dies and 342survived. Mean age is 29.36 whereas median age is 28. Mean fare was 32 whereas median fare was 14.
+#Most of the people embarked from southampton
+
+str(trn)
+#It shows the structire of teh data like data types and column types etc.
 # I will remove cabin column as well as Ticket columns form the data set
 
 trn$Cabin <- NULL
